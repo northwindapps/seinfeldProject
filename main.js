@@ -2,12 +2,28 @@ const synth = window.speechSynthesis;
 const speakButton = document.getElementById('speak');
 const inputField = document.getElementById('text-to-speech');
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+let inputStr = '';
+let index = null;
+let counter = 5;
 recognition.lang = 'en-US'; // Set the language for recognition
 
 recognition.onresult = (event) => {
   const transcript = event.results[0][0].transcript;
-  document.getElementById('output').textContent = transcript;
-  speakText();
+  inputStr = inputStr + transcript;
+  document.getElementById('output').textContent = inputStr;
+  const readyToSpeak = responseText(inputStr);
+  if (readyToSpeak) {
+    speakText(inputStr); 
+    inputStr = '';
+    counter = 5;
+  }else{
+    if(counter == 0 ){
+        inputStr = '';
+        counter = 5;
+    }else{
+        counter -= 1;
+    }
+  }
 };
 
 recognition.onerror = (event) => {
@@ -20,10 +36,13 @@ const transcripts = [];
 startButton.addEventListener('click', () => {
   console.log('haha');
   for (let item of json) {
+    var regex = /\([^)]*\)/g;
+    // Replace all text within parentheses with an empty string
+    var textWithoutParentheses = item.line.replace(regex, '');
     speakers.push(item.speaker);
-    transcripts.push(item.line);
+    transcripts.push(textWithoutParentheses);
   }
-  console.log(transcripts);
+//   console.log(transcripts);
   recognition.start();
 });
 
@@ -35,9 +54,9 @@ recognition.onspeechend = () => {
   recognition.stop(); // Stop listening after speech ends
 };
 
-function speakText() {
+function speakText(text) {
     // const text = inputField.value;
-    const text = 'ah ha.Oh yes.'
+    // const text = 'ah ha.Oh yes.'
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = synth.getVoices()[0]; // Set the voice (you may need to select an available voice)
     utterance.rate = 1.0; // Speech rate (0.1 to 10)
@@ -46,7 +65,21 @@ function speakText() {
     const usEnglishVoice = voices.find(voice => voice.lang === 'en-US');
     utterance.voice = usEnglishVoice;
     synth.speak(utterance);
-  }
+}
+
+function responseText(text){
+    if (index) {
+        
+    }else{
+        for (let index = 0; index < transcripts.length; index++) {
+            const element = transcripts[index];
+            var elements = element.split(' ');
+            var inputs = text.split(' ');
+            
+        }
+
+    }
+}
   
   
 
