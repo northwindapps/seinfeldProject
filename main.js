@@ -3,22 +3,28 @@ const speakButton = document.getElementById('speak');
 const inputField = document.getElementById('text-to-speech');
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 let inputStr = '';
-let index = null;
+let indexNum = null;
 let counter = 5;
 recognition.lang = 'en-US'; // Set the language for recognition
 
 recognition.onresult = (event) => {
   const transcript = event.results[0][0].transcript;
-  inputStr = inputStr + transcript;
+  inputStr = inputStr + ' ' + transcript;
   document.getElementById('output').textContent = inputStr;
-  const readyToSpeak = responseText(inputStr);
-  if (readyToSpeak) {
-    speakText(inputStr); 
+  let result = responseText(inputStr);
+  console.log('transIndex',result);
+  console.log('your line',transcripts[result-1]);
+  console.log('response',transcripts[result]);
+  if (result) {
+    speakText(transcripts[result]); 
     inputStr = '';
+    // document.getElementById('output').textContent = inputStr;
     counter = 5;
+    indexNum += 1;
   }else{
     if(counter == 0 ){
         inputStr = '';
+        // document.getElementById('output').textContent = inputStr;
         counter = 5;
     }else{
         counter -= 1;
@@ -68,38 +74,80 @@ function speakText(text) {
 }
 
 function responseText(text){
-    if (index) {
-        
-    }else{
-        for (let index = 0; index < transcripts.length; index++) {
-            const element = transcripts[index];
-            var elements = element.split(' ');
-            var inputs = text.split(' ');
-            
+    let matched = false;
+    let transIndex = null;
+    if (indexNum !== null) { 
+        console.log('indexNum',indexNum);
+        console.log('nextLine', transcripts[indexNum]);
+        const element = transcripts[indexNum].toLowerCase();
+        const charactersToRemove = /[!.,?]/g; // Define a regular expression to match the characters to remove
+        const cleanedString = element.replace(charactersToRemove, '');
+        const elements = cleanedString.split(' ');
+        const inputs = text.toLowerCase().split(' ');
+        console.log('elements',elements);
+        console.log('inputs',inputs);
+        //const vocabulary = elements.concat(inputs);
+        let theNumberOfMatched = 0;
+        let maxScore = 0;
+        for (let i = 0; i < elements.length; i++) {
+            for (let j = 0; j < inputs.length; j++) {
+                if (elements[i] === inputs[j]) {
+                theNumberOfMatched++;
+                // console.log(theNumberOfMatched / elements.length);
+                break; // Break the inner loop if a match is found to avoid double-counting.
+                }
+            }
         }
-
+        if(theNumberOfMatched / elements.length >= 0.8){
+            console.log('matched');
+            // matched = true;
+            if(theNumberOfMatched / elements.length > maxScore){
+                maxScore = theNumberOfMatched / elements.length;
+                indexNum += 1;
+                transIndex = indexNum;
+            }
+        }
+    }else{
+        console.log('indexNum',indexNum);
+        for (let index = 0; !matched && index < transcripts.length; index++) {
+            const element = transcripts[index].toLowerCase();
+            const charactersToRemove = /[!.,?]/g; // Define a regular expression to match the characters to remove
+            const cleanedString = element.replace(charactersToRemove, '');
+            const elements = cleanedString.split(' ');
+            const inputs = text.toLowerCase().split(' ');
+            // console.log('elements',elements);
+            // console.log('inputs',inputs);
+            //const vocabulary = elements.concat(inputs);
+            let theNumberOfMatched = 0;
+            let maxScore = 0;
+            for (let i = 0; i < elements.length; i++) {
+                for (let j = 0; j < inputs.length; j++) {
+                    if (elements[i] === inputs[j]) {
+                    theNumberOfMatched++;
+                    console.log(theNumberOfMatched / elements.length);
+                    break; // Break the inner loop if a match is found to avoid double-counting.
+                    }
+                }
+            }
+            if(theNumberOfMatched / elements.length >= 0.70){
+                console.log('matched',index);
+                // matched = true;
+                if(theNumberOfMatched / elements.length > maxScore){
+                    maxScore = theNumberOfMatched / elements.length;
+                    transIndex = index+1;
+                    console.log('elements',elements);
+                    indexNum = transIndex;
+                }
+            }
+        }
     }
+
+    return transIndex;
 }
   
   
 
 let json = [
-  {
-      "speaker": "Production Credits",
-      "line": " Supervising Producer ................. Larry Charles Supervising Producer ................. Tom Cherones Executive Producer ................... Andrew Sherman Created By ........................... Larry David and Jerry Seinfeld Teleplay By .......................... Larry Charles Story By ............................. Bruce Kirschbaum Directed By .......................... Tom Cherones ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-  },
-  {
-      "speaker": "Cast",
-      "line": " Jerry Seinfeld ....................... Jerry Seinfeld George Costanza ...................... Jason Alexander Elaine Benes ......................... Julia Louis-Drefus Kramer ............................... Michael Richards"
-  },
-  {
-      "speaker": "With",
-      "line": " Newman ............................... Wayne Knight Corinne ............................... Carol Kane Lippman ............................... Richard Fancy Testikov ............................... George Murdock Diane ............................... Rosalind Allen"
-  },
-  {
-      "speaker": "Also",
-      "line": " Hotel Clerk ............................... Daivid Blackwood Woman at beach ............................... Heather Morgan ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ (Open Jerry's apartment, Jerry is at the table and Elaine is on the phone) "
-  },
   {
       "speaker": "Elaine",
       "line": "(to the phone)Well did he bring it up in the meeting?  (Jerry picks up a yellow shirt and walks to Elaine) "
