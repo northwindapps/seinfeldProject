@@ -61,8 +61,6 @@ recognition.onspeechend = () => {
 };
 
 function speakText(text) {
-    // const text = inputField.value;
-    // const text = 'ah ha.Oh yes.'
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = synth.getVoices()[0]; // Set the voice (you may need to select an available voice)
     utterance.rate = 1.0; // Speech rate (0.1 to 10)
@@ -108,14 +106,13 @@ function responseText(text){
             }
         }
     }else{
-        console.log('indexNum',indexNum);
         for (let index = 0; !matched && index < transcripts.length; index++) {
             const element = transcripts[index].toLowerCase();
             const charactersToRemove = /[!.,?]/g; // Define a regular expression to match the characters to remove
             const cleanedString = element.replace(charactersToRemove, '');
             const elements = cleanedString.split(' ');
             const inputs = text.toLowerCase().split(' ');
-            // console.log('elements',elements);
+            console.log('elements',elements);
             // console.log('inputs',inputs);
             //const vocabulary = elements.concat(inputs);
             let theNumberOfMatched = 0;
@@ -129,7 +126,7 @@ function responseText(text){
                     }
                 }
             }
-            if(theNumberOfMatched / elements.length >= 0.70){
+            if(theNumberOfMatched / elements.length >= 0.60){
                 console.log('matched',index);
                 // matched = true;
                 if(theNumberOfMatched / elements.length > maxScore){
@@ -137,6 +134,7 @@ function responseText(text){
                     transIndex = index+1;
                     console.log('elements',elements);
                     indexNum = transIndex;
+                    matched = true;
                 }
             }
         }
