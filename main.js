@@ -41,6 +41,7 @@ const speakers = [];
 const transcripts = [];
 startButton.addEventListener('click', () => {
   console.log('haha');
+  document.getElementById('yournextline').textContent = 'Your next line:' + 'Really?';
   for (let item of json) {
     var regex = /\([^)]*\)/g;
     // Replace all text within parentheses with an empty string
@@ -69,6 +70,9 @@ function speakText(text) {
     const usEnglishVoice = voices.find(voice => voice.lang === 'en-US');
     utterance.voice = usEnglishVoice;
     synth.speak(utterance);
+    if (indexNum !== null) {
+        document.getElementById('yournextline').textContent = 'Your next line:' + ' ' + transcripts[indexNum+1];
+    }
 }
 
 function responseText(text){
