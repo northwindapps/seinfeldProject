@@ -5,26 +5,33 @@ const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognit
 let inputStr = '';
 let indexNum = null;
 let counter = 5;
+let characterNum = 0;
+const characterValues = ['Jerry','George','Kramer','Elaine'];
 recognition.lang = 'en-US'; // Set the language for recognition
 
-recognition.onresult = (event) => {
+//speech detection
+recognition.onresult = async (event) => {
   const transcript = event.results[0][0].transcript;
   inputStr = inputStr + ' ' + transcript;
-  document.getElementById('output').textContent = inputStr;
+  document.getElementById('output').textContent = 'Your speech: ' + inputStr;
   let result = responseText(inputStr);
-  console.log('transIndex',result);
-  console.log('your line',transcripts[result-1]);
-  console.log('response',transcripts[result]);
   if (result) {
-    speakText(transcripts[result]); 
     inputStr = '';
-    // document.getElementById('output').textContent = inputStr;
     counter = 5;
     indexNum += 1;
+    let toBecontinued = true;
+    for (let index = indexNum; toBecontinued && index < transcripts.length; index++) {
+        if (speakers[index] === characterValues[characterNum]) {
+            document.getElementById('yournextline').textContent = 'Your next line: ' + transcripts[index];
+            toBecontinued = false;
+        }else{
+            await speakText(transcripts[index]);
+        }
+        indexNum = index;
+    }
   }else{
     if(counter == 0 ){
         inputStr = '';
-        // document.getElementById('output').textContent = inputStr;
         counter = 5;
     }else{
         counter -= 1;
@@ -36,12 +43,11 @@ recognition.onerror = (event) => {
   console.error('Speech recognition error:', event.error);
 };
 
+//initialization
 const startButton = document.getElementById('start-recognition');
 const speakers = [];
 const transcripts = [];
 startButton.addEventListener('click', () => {
-  console.log('haha');
-  document.getElementById('yournextline').textContent = 'Your next line:' + 'Really?';
   for (let item of json) {
     var regex = /\([^)]*\)/g;
     // Replace all text within parentheses with an empty string
@@ -49,7 +55,9 @@ startButton.addEventListener('click', () => {
     speakers.push(item.speaker);
     transcripts.push(textWithoutParentheses);
   }
-//   console.log(transcripts);
+  const firstIndex = speakers.indexOf(characterValues[characterNum]);
+  document.getElementById('yournextline').textContent = 'Your next line:' + transcripts[firstIndex];
+  indexNum = firstIndex;
   recognition.start();
 });
 
@@ -61,18 +69,74 @@ recognition.onspeechend = () => {
   recognition.stop(); // Stop listening after speech ends
 };
 
-function speakText(text) {
+async function speakText(text) {
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.voice = synth.getVoices()[0]; // Set the voice (you may need to select an available voice)
     utterance.rate = 1.0; // Speech rate (0.1 to 10)
-    utterance.pitch = 1.0; // Speech pitch (0 to 2)
+    utterance.pitch = 1.5; // Speech pitch (0 to 2)
     const voices = synth.getVoices();
+  
+    console.log('indexNum',indexNum);
     const usEnglishVoice = voices.find(voice => voice.lang === 'en-US');
+    // const usEnglishVoices = voices.filter(voice => voice.lang === 'en-US');
+
+    // console.log(usEnglishVoices);
+    // const firstIndex = speakers.indexOf(speakers[indexNum]);
+    // switch (firstIndex) {
+    //     case 0:
+    //         utterance.voice = usEnglishVoices[17];
+    //         break;
+    //     case 1:
+    //         utterance.voice = usEnglishVoices[18];
+    //         break;
+    //     case 2:
+    //         utterance.voice = usEnglishVoices[20];
+    //         break;
+    //     case 3:
+    //         utterance.voice = usEnglishVoices[21];
+    //     break;
+    //     default:
+    //         utterance.voice = usEnglishVoices[0];
+    //         break;
+    // }
     utterance.voice = usEnglishVoice;
     synth.speak(utterance);
-    if (indexNum !== null) {
-        document.getElementById('yournextline').textContent = 'Your next line:' + ' ' + transcripts[indexNum+1];
+}
+
+function tts(text){
+    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiN2Q0M2RiMDctZGE0Yy00NjNiLWE3YTctNjZmMGY5NGI5ZTM2IiwidHlwZSI6ImFwaV90b2tlbiJ9.I5aAuTfhMHi6mQWL7Wqif7oX7PAX2a6mlFsEQ-GOabM'; // Replace with your actual API key
+    const apiUrl = 'https://api.edenai.run/v2/audio/text_to_speech';
+
+    const requestOptions = {
+    method: 'POST',
+    headers: {
+        Authorization: `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+        show_original_response: false,
+        fallback_providers: '',
+        providers: 'amazon,google,ibm,microsoft',
+        language: 'en',
+        text: text,
+        option: 'FEMALE',
+    }),
+};
+
+fetch(apiUrl, requestOptions)
+  .then((response) => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
     }
+    return response.json();
+  })
+  .then((data) => {
+    console.log(data);
+  })
+  .catch((error) => {
+    console.error('Fetch error:', error);
+  });
+
 }
 
 function responseText(text){
@@ -100,14 +164,15 @@ function responseText(text){
                 }
             }
         }
-        if(theNumberOfMatched / elements.length >= 0.8){
+        if(theNumberOfMatched / elements.length >= 0.4){
             console.log('matched');
             // matched = true;
             if(theNumberOfMatched / elements.length > maxScore){
                 maxScore = theNumberOfMatched / elements.length;
-                indexNum += 1;
-                transIndex = indexNum;
+                // indexNum += 1;
+                // transIndex = indexNum;
             }
+            return true;
         }
     }else{
         for (let index = 0; !matched && index < transcripts.length; index++) {
@@ -144,8 +209,27 @@ function responseText(text){
         }
     }
 
-    return transIndex;
+    // return transIndex;
+    return false;
 }
+
+// Get all radio buttons by their name attribute
+const radioButtons = document.getElementsByName('character');
+
+// Add a change event listener to each radio button
+radioButtons.forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.checked) {
+            const selectedValue = this.value;
+            const parentLI = this.parentElement;
+            const textContent = parentLI.textContent.trim();
+            const word = textContent.replace(radio.value, '').trim();
+            console.log(`Selected character: ${word}`);
+            characterNum = selectedValue;
+            console.log(`Selected value: ${characterNum}`);
+        }
+    });
+});
   
   
 
